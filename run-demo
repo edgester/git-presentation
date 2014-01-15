@@ -1,0 +1,97 @@
+#!/bin/bash
+
+function show_prompt {
+    DIR=`pwd | sed -e "s@$HOME@\~@g"`
+    PREFIX=`basename $0`
+    echo -n "$PREFIX: $DIR\$ "
+    #read -s -N 1
+}
+
+function escape_echo {
+    FIRST=1
+    for item in "$@"; do
+        [ $FIRST -eq 0 ] && echo -n " "
+        FIRST=0
+        echo $item | grep -qsE '\s'
+        if [ $? -eq 0 ]; then
+            echo -n '"'$item'"'
+        else
+            echo -n $item            
+        fi
+        done
+    echo ""
+}
+
+function type_echo {
+    if [ -x /usr/bin/pv ]; then
+        escape_echo "$@" | pv -qL $((15+(-2+RANDOM%5)))
+    else
+        escape_echo "$@"
+    fi
+}
+
+function run {
+    show_prompt
+    type_echo "$@"
+    read -s -N 1
+    "$@"
+}
+
+rm -fr my-project my-project-clone tmp > /dev/null 2>&1
+
+SAVE_GITCONFIG=0
+[ -f ~/.gitconfig ] && SAVE_GITCONFIG=1
+[ $SAVE_GITCONFIG -eq 1 ] && mv ~/.gitconfig ~/.gitconfig.bak
+
+clear
+
+cat <<EOF
+# Welcome to the FOSS Charlotte git presentation
+# presented by Jason Edgecombe
+#
+# Press any key to advance through the commands.
+
+EOF
+
+echo "#In the beginning, there was cp...."
+run mkdir tmp
+run cd tmp
+
+show_prompt
+echo "echo something > foo"
+read -s -N 1
+echo something > foo
+
+run cp foo foo.bak
+
+show_prompt
+echo "echo something2 > foo"
+read -s -N 1
+echo something2 > foo
+
+run cp foo foo.bak2
+run cp foo foo.works
+run cp foo foo.broken
+run cp foo foo.new-feature
+
+echo '# There is a better way... use git!'
+read -s -N 1
+
+echo "# First, I must introduce myself to git..."
+run git config -l
+run git config --global user.name "John Doe"
+run git config --global user.email nobody@example.com
+run git config -l
+run mkdir myproject
+
+echo '# Create the repo!'
+run git init
+
+echo ""
+echo ""
+echo "----------------------------------------------------"
+echo 'Done!...'
+
+if [ $SAVE_GITCONFIG -eq 1 ]; then
+    mv -f ~/.gitconfig.bak ~/.gitconfig
+fi
